@@ -40,7 +40,7 @@ const Argument: FC = () => {
   };
   return (
     <>
-      <div className="col-3  d-flex align-items-center">
+      <div className="col-md-3  d-flex align-items-center">
         <input
           onChange={handleChange}
           value={arg.argName}

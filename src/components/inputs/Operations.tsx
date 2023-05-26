@@ -1,20 +1,20 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useId, useRef, useState } from "react";
 import { Arg } from "./Argument";
 import { GlobalState, StateType, actionTypes } from "../../contexts/Globals";
+import AndOR from "./AndOR";
 
-const Operations: React.FC = () => {
+const Operations: React.FC<{ root?: boolean }> = ({ root }) => {
   const all: string[] = ["constant", "argument", "and", "or"];
   const constant: string[] = ["false", "true"];
   const [args, setArgs] = useState<Arg[]>([]);
-  const { state, dispatch, compute, getArgNames } = useContext(
-    GlobalState
-  ) as StateType;
+  const { state, dispatch, getArgNames } = useContext(GlobalState) as StateType;
   const [switchOptions, setSwitchOptions] = useState<string>("all");
   const [options, setOptions] = useState<string[]>(all);
   const [value, setValue] = useState<string>("default");
   const [name, setName] = useState<string>("select an operation");
   const [argId, setArgId] = useState<string>("");
-  const selRef = useRef<HTMLSelectElement>(null);
+  const divRef = useRef<HTMLDivElement>(null);
+  const id = useId();
   const renderOptions = () => {
     switch (switchOptions) {
       case "all":
@@ -27,10 +27,12 @@ const Operations: React.FC = () => {
         setOptions([]);
         break;
       case "and":
-        setOptions([]);
-        break;
       case "or":
         setOptions([]);
+        dispatch({
+          type: actionTypes.COMPUTE,
+          payload: { id, op: switchOptions },
+        });
         break;
       default:
         break;
@@ -50,13 +52,18 @@ const Operations: React.FC = () => {
     switch (switchOptions) {
       case "constant":
         dispatch({
-          type: actionTypes.SETRESULT,
-          payload: target.value === "true" ? true : false,
+          type: root ? actionTypes.SETRESULT : actionTypes.COMPUTE,
+          payload: root
+            ? target.value === "true"
+              ? true
+              : false
+            : {
+                id,
+                val: target.value === "true" ? true : false,
+              },
         });
         break;
       case "argument":
-        console.log(target.value);
-
         setArgId(target.value.split("-")[2]);
         reComputeArgs(target.value.split("-")[1]);
         break;
@@ -69,11 +76,21 @@ const Operations: React.FC = () => {
     setValue("default");
     setName("select an operation");
     setOptions(all);
+    if (root === true) {
+      dispatch({
+        type: actionTypes.CLEARRESULT,
+        payload: undefined,
+      });
+    }
   };
   const reComputeArgs = (bool: string) => {
     dispatch({
-      type: actionTypes.SETRESULT,
-      payload: bool === "true" ? true : false,
+      type: root ? actionTypes.SETRESULT : actionTypes.COMPUTE,
+      payload: root
+        ? bool === "true"
+          ? true
+          : false
+        : { id, val: bool === "true" ? true : false },
     });
   };
   useEffect(() => {
@@ -89,46 +106,51 @@ const Operations: React.FC = () => {
   }, [state.allArgs]);
 
   return (
-    <div className="col-3 d-flex align-items-center gap-1">
-      <select
-        ref={selRef}
-        value={value}
-        onChange={handleChange}
-        name="operations"
-        className="form-select"
-      >
-        <option value="default" disabled>
-          {name}
-        </option>
-        {switchOptions === "argument"
-          ? args && args.length > 0
-            ? args.map((op, idx) => {
+    <div className="d-flex flex-column">
+      <div className="col-md-5 d-flex align-items-center gap-1">
+        <select
+          value={value}
+          onChange={handleChange}
+          name="operations"
+          className="form-select"
+        >
+          <option value="default" disabled>
+            {name}
+          </option>
+          {switchOptions === "argument"
+            ? args && args.length > 0
+              ? args.map((op, idx) => {
+                  return (
+                    <option
+                      value={op.argName + "-" + op.argVal + "-" + op.Id}
+                      key={op.toString() + idx}
+                    >
+                      {op.argName}
+                    </option>
+                  );
+                })
+              : ""
+            : options && options.length > 0
+            ? options.map((op, idx) => {
                 return (
-                  <option
-                    value={op.argName + "-" + op.argVal + "-" + op.Id}
-                    key={op.toString() + idx}
-                  >
-                    {op.argName}
+                  <option value={op} key={op + idx}>
+                    {op}
                   </option>
                 );
               })
-            : ""
-          : options && options.length > 0
-          ? options.map((op, idx) => {
-              return (
-                <option value={op} key={op + idx}>
-                  {op}
-                </option>
-              );
-            })
-          : ""}
-      </select>
-      <button
-        onClick={handleRemove}
-        className="btn btn-danger  d-flex align-items-center justify-content-center"
-      >
-        X
-      </button>
+            : ""}
+        </select>
+        <button
+          onClick={handleRemove}
+          className="btn btn-danger  d-flex align-items-center justify-content-center"
+        >
+          X
+        </button>
+      </div>
+      <br />
+      <div className="container" ref={divRef}>
+        {switchOptions === "and" || switchOptions === "or" ? <AndOR /> : ""}
+      </div>
     </div>
   );
 };

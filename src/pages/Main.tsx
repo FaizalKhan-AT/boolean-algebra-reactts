@@ -5,7 +5,7 @@ import { GlobalState, StateType } from "../contexts/Globals";
 
 const Main: FC = () => {
   const [argNodes, setArgNodes] = useState<React.ReactNode[]>([]);
-  const { state, compute } = useContext(GlobalState) as StateType;
+  const { state } = useContext(GlobalState) as StateType;
   const handleAddArg = () => {
     setArgNodes([...argNodes, <Argument />]);
   };
@@ -20,13 +20,13 @@ const Main: FC = () => {
           : ""}
         <button
           onClick={handleAddArg}
-          className="btn fw-bold col-2 btn-success"
+          className="btn fw-bold col-md-2 btn-success"
         >
           + add arg
         </button>
       </div>
       <div className="d-flex flex-column gap-2 my-2">
-        <Operations />
+        <Operations root />
       </div>
       <div>Result : {state.result + ""}</div>
     </div>
